@@ -1,0 +1,55 @@
+##################################################################
+# builds a base image with python and some tools
+##################################################################
+# docker build -f DockerfileAbstratiumPython39 -t abstratium/python39-bitnet .
+
+FROM python:3.9-slim-bullseye
+
+# set timezone
+ENV TZ="Europe/Zurich"
+
+RUN apt update
+RUN apt autoremove -y
+RUN apt upgrade -y
+
+RUN apt install -y curl
+RUN apt install -y wget
+RUN apt install -y less
+RUN apt install -y inetutils-ping
+RUN apt install -y dnsutils
+RUN apt install -y git
+RUN apt install -y tcpdump
+
+WORKDIR /usr/local
+
+RUN echo "alias ll='ls -la'" >> ~/.bashrc
+
+WORKDIR /
+RUN git clone --recursive https://github.com/microsoft/BitNet.git
+WORKDIR BitNet
+
+RUN pip install -r requirements.txt
+
+RUN huggingface-cli download microsoft/BitNet-b1.58-2B-4T-gguf --local-dir models/BitNet-b1.58-2B-4T
+
+RUN apt install -y cmake
+RUN apt install -y g++ build-essential
+
+# add extras, hoping to get llama-server
+COPY extra-requirements.txt extra-requirements.txt
+RUN pip install -r extra-requirements.txt
+
+RUN CMAKE_LLAMA_BUILD_SERVER=ON python setup_env.py -md models/BitNet-b1.58-2B-4T -q i2_s
+
+WORKDIR /BitNet/build
+RUN cmake . -DLLAMA_BUILD_SERVER=ON
+WORKDIR /BitNet
+RUN cmake --build build --config Release
+
+
+# CMD python run_inference.py -m models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf -p "You are a helpful assistant" -cnv
+
+# CMD ./build/bin/llama-cli -m models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf -n 8096 -t 8 -ngl 0 -c 8096 --temp 0.8 -b 1 -cnv -p 'you are a comedian specialising in bad jokes'
+
+CMD ./build/bin/llama-server -m /BitNet/models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf -c 16384 -np 4 --host 0.0.0.0
+
