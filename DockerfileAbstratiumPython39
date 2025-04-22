@@ -35,12 +35,13 @@ RUN huggingface-cli download microsoft/BitNet-b1.58-2B-4T-gguf --local-dir model
 RUN apt install -y cmake
 RUN apt install -y g++ build-essential
 
-# add extras, hoping to get llama-server
+# add extras, hoping to get llama-server - actually might not make any difference!
 COPY extra-requirements.txt extra-requirements.txt
 RUN pip install -r extra-requirements.txt
 
-RUN CMAKE_LLAMA_BUILD_SERVER=ON python setup_env.py -md models/BitNet-b1.58-2B-4T -q i2_s
+RUN python setup_env.py -md models/BitNet-b1.58-2B-4T -q i2_s
 
+# NOW BUILD THE LLAMA SERVER:
 WORKDIR /BitNet/build
 RUN cmake . -DLLAMA_BUILD_SERVER=ON
 WORKDIR /BitNet

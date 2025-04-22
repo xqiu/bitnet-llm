@@ -2,6 +2,8 @@
 
 Docker image based on https://github.com/microsoft/BitNet?tab=readme-ov-file#build-from-source
 
+But includes building llama-server, which isn't done in the original repo.
+
 ## Docker Image
 
 ### Build
@@ -26,6 +28,9 @@ docker run \
 http://127.0.0.1:19000/
 ```
 
+## License
+
+See https://github.com/microsoft/BitNet/blob/main/LICENSE which at the time or writing was MIT and copyright Microsoft Corporation.
 
 ## Settings in the UI
 
@@ -197,3 +202,36 @@ The grammar would define that structure, and the model is constrained to follow 
 | Prompt template	|Formats each prompt to send to the model|
 | Chat history template	|Controls how prior turns are shown|
 | Grammar	|Optional strict format for model outputs (e.g., JSON)|
+
+## Spam Detection
+
+
+### Prompt: 
+
+```
+You are an expert in email and specifically classifying spam.
+You MUST respond with a JSON object, containing two fields, "spam" which may be true or false, and "reason" which is a string containing your explanation about why you think it is spam or not. You will be provided with a raw email body. Important: respond ONLY with JSON.
+
+# Hints:
+
+- References to bitcoins, finance or similar should be considered as spam.
+- References to drugs, porn, viagra, etc. are spam.
+- Order confirmations are NOT spam.
+- Emails selling things are probably spam.
+- If the subject sounds too good to be true, it is probably spam.
+```
+
+### Grammar:
+
+```
+boolean ::= ("true" | "false") space
+char ::= [^"\\\x7F\x00-\x1F] | [\\] (["\\bfnrt] | "u" [0-9a-fA-F]{4})
+reason-kv ::= "\"reason\"" space ":" space string
+root ::= "{" space spam-kv "," space reason-kv "}" space
+space ::= | " " | "\n" [ \t]{0,20}
+spam-kv ::= "\"spam\"" space ":" space boolean
+string ::= "\"" char* "\"" space
+```
+
+Temperature: 0.2
+
