@@ -32,7 +32,7 @@ RUN pip install -r requirements.txt
 
 RUN huggingface-cli download microsoft/BitNet-b1.58-2B-4T-gguf --local-dir models/BitNet-b1.58-2B-4T
 
-RUN apt install -y cmake
+RUN apt install -y cmake clang
 RUN apt install -y g++ build-essential
 
 # add extras, hoping to get llama-server - actually might not make any difference!
